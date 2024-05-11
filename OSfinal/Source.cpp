@@ -1,5 +1,18 @@
 #include <SFML/Graphics.hpp>
 #include "mainMenu.h"
+#include "pacman.h"
+
+void* movePacman(void* arg) {
+    Pacman* pacman = static_cast<Pacman*>(arg);
+
+    while (true) {
+    pacman->MoveLeft(2.0f);
+	sleep(milliseconds(50));
+    }
+
+    return NULL;
+}
+
 int main()
 {
     //for main menu front page
@@ -62,6 +75,11 @@ int main()
                     int x = menu.menuPressed();
                     if (x == 0) //play game
                     {
+                        Pacman pacman;
+                        pacman.SetRenderWindow(&play);
+                        pthread_t t1;
+                        pthread_create(&t1, NULL, movePacman, &pacman);//pacman creataed
+
                         while (play.isOpen())
                         {
                             Event a;
@@ -82,7 +100,8 @@ int main()
                             score.close();
                             level.close();
                             play.clear();
-                            play.draw(menubg);
+                            pacman.Display();
+                            //play.draw(menubg);
                             play.display();
                         }
                     }

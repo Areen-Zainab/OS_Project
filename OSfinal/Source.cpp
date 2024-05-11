@@ -34,8 +34,38 @@ void* movePacman(void* arg) {
     return NULL;
 }
 
+void* moveGhost(void* arg) {
+    Pacman* pacman = static_cast<Pacman*>(arg);
+
+    while (true) {
+        if (leftKeyPressed) {
+            pacman->MoveLeft(5.0f); // Move Pac-Man left
+            pacman->wrapAround();
+        }
+        else if (rightKeyPressed) {
+            pacman->MoveRight(5.0f); // Move Pac-Man right
+            pacman->wrapAround();
+        }
+        else if (upKeyPressed) {
+            pacman->MoveUp(5.0f); // Move Pac-Man up
+            pacman->wrapAround();
+        }
+        else if (downKeyPressed) {
+            pacman->MoveDown(5.0f); // Move Pac-Man down
+            pacman->wrapAround();
+        }
+
+        sleep(milliseconds(50));
+    }
+
+    return NULL;
+}
+
+cout << "hello, hello" << endl;
+
 int main()
 {
+    cout << "welcome to pacman" << endl;
     //for main menu front page
     RenderWindow mainmenu(VideoMode(800, 800), "main menu");
     Menu menu(800, 800);

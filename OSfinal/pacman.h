@@ -33,14 +33,21 @@ public:
     }
     void SetPosition(Position position){this->position = position; }
 
-    void MoveLeft(float delta_x){ position.x += delta_x;}
+    void MoveLeft(float delta_x){ position.x -= delta_x;}
 
-    void MoveRight(float delta_x) {  position.x -= delta_x;}
+    void MoveRight(float delta_x) {  position.x += delta_x;}
 
-    void MoveUp(float delta_y){ position.y += delta_y; }
+    void MoveUp(float delta_y){ position.y -= delta_y; }
 
-    void MoveDown(float delta_y){ position.y -= delta_y;}
-
+    void MoveDown(float delta_y){ position.y += delta_y;}
+    
+    void wrapAround()
+    {
+        if (position.y < 0){ position.y = 800;}
+        if (position.y > 800)position.y = 0;
+        if (position.x > 800) position.x = 0;
+        if (position.x < 0) position.x = 800;
+    }
     void Display(){
         sprite.setPosition(position.x, position.y);
         renderWindow->draw(sprite);

@@ -19,18 +19,6 @@ public:
     Font font; //the font used
     Pacman pacman;
 
-    void wrapAround()
-    {
-        if (pacman.position.y < 0){
-            pacman.position.y = 800;}
-        if (pacman.position.y > 800)
-            pacman.position.y = 0;
-        if (pacman.position.x > 800)
-            pacman.position.x = 0;
-        if (pacman.position.x < 0)
-            pacman.position.x = 800;
-    }
-
     void SetRenderWindow(RenderWindow* renderWindow)
     {
         this->renderWindow = renderWindow;

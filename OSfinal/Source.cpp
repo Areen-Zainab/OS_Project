@@ -2,12 +2,33 @@
 #include "mainMenu.h"
 #include "pacman.h"
 
+bool leftKeyPressed = false; 
+bool rightKeyPressed = false; 
+bool upKeyPressed = false; 
+bool downKeyPressed = false; 
+
 void* movePacman(void* arg) {
     Pacman* pacman = static_cast<Pacman*>(arg);
 
     while (true) {
-    pacman->MoveLeft(2.0f);
-	sleep(milliseconds(50));
+         if (leftKeyPressed) {
+            pacman->MoveLeft(5.0f); // Move Pac-Man left
+            pacman->wrapAround();
+        }
+        else if (rightKeyPressed) {
+            pacman->MoveRight(5.0f); // Move Pac-Man right
+            pacman->wrapAround();
+        }
+         else if (upKeyPressed) {
+            pacman->MoveUp(5.0f); // Move Pac-Man up
+            pacman->wrapAround();
+        }
+         else if (downKeyPressed) {
+            pacman->MoveDown(5.0f); // Move Pac-Man down
+            pacman->wrapAround();
+        }
+
+	    sleep(milliseconds(50));
     }
 
     return NULL;
@@ -83,7 +104,8 @@ int main()
                         while (play.isOpen())
                         {
                             Event a;
-                            while (play.pollEvent(a)) {
+                            while (play.pollEvent(a)) 
+                            {
 
                                 if (a.type == Event::Closed) {
                                     play.close();
@@ -94,6 +116,42 @@ int main()
                                         play.close();
                                     }
                                 }
+
+                                if (a.type == Event::KeyPressed)
+                                {
+                                    switch (a.key.code) 
+                                    {
+                                        case Keyboard::Down:
+
+                                            downKeyPressed = true;
+                                            leftKeyPressed = false;
+                                            rightKeyPressed = false;  
+                                            upKeyPressed = false;                                     
+                                            break;
+
+                                        case Keyboard::Left:
+                                            leftKeyPressed = true; 					    
+                                            downKeyPressed = false;
+                                            rightKeyPressed = false; 
+                                            upKeyPressed = false;  
+                                            break;
+                                        case Keyboard::Right:
+                                            rightKeyPressed = true; 
+                                            downKeyPressed = false;
+                                            leftKeyPressed = false; 
+                                            upKeyPressed = false; 
+                                            break;
+                                        case Keyboard::Up:
+                                            upKeyPressed = true; 
+                                            downKeyPressed = false;
+                                            leftKeyPressed = false; 
+                                            rightKeyPressed = false; 
+                                            break;
+                                            
+                                        default:
+                                        break;
+                                    }
+				               }
                             }
 
                             help.close();

@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include "mainMenu.h"
 #include "pacman.h"
+#include "ghost.h"
 
 bool leftKeyPressed = false; 
 bool rightKeyPressed = false; 
@@ -35,37 +36,67 @@ void* movePacman(void* arg) {
 }
 
 void* moveGhost(void* arg) {
-    Pacman* pacman = static_cast<Pacman*>(arg);
-
+    Ghost* ghost = static_cast<Ghost*>(arg);
     while (true) {
-        if (leftKeyPressed) {
-            pacman->MoveLeft(5.0f); // Move Pac-Man left
-            pacman->wrapAround();
-        }
-        else if (rightKeyPressed) {
-            pacman->MoveRight(5.0f); // Move Pac-Man right
-            pacman->wrapAround();
-        }
-        else if (upKeyPressed) {
-            pacman->MoveUp(5.0f); // Move Pac-Man up
-            pacman->wrapAround();
-        }
-        else if (downKeyPressed) {
-            pacman->MoveDown(5.0f); // Move Pac-Man down
-            pacman->wrapAround();
-        }
+        ghost->MoveRandomly(5.0f); // Move ghost randomly
 
-        sleep(milliseconds(50));
+        // Sleep for a short time to avoid busy waiting
+        sleep(milliseconds(100));
     }
 
     return NULL;
 }
+const int NUM_GHOSTS = 4;
+const int WIDTH = 22;
+const int HEIGHT = 20;
+const int gsize = 35;
+int maze[HEIGHT][WIDTH] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1},
+                            {1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1},//6
+                            {1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},//10
+                            {1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1},
+                            {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+};
 
-cout << "hello, hello" << endl;
-
+void drawmaze(RenderWindow &ok){
+   for (int i = 0; i < HEIGHT; i++) 
+   {
+      for (int j = 0; j < WIDTH; j++) 
+      {
+          if(maze[i][j]==0)
+          {
+             CircleShape golu(4,4);
+             golu.setPosition(j*gsize+40, i*gsize+60);
+             golu.setFillColor(Color(225,217,0));
+              ok.draw(golu);
+          }
+          else if(maze[i][j]==1)
+          {
+             RectangleShape dabba(Vector2f(30,30));
+               dabba.setPosition(j*gsize+30, i*gsize+50);
+                dabba.setFillColor(Color(0,0,120));
+               ok.draw(dabba);
+          }
+        }
+                         
+   }
+}
 int main()
 {
-    cout << "welcome to pacman" << endl;
     //for main menu front page
     RenderWindow mainmenu(VideoMode(800, 800), "main menu");
     Menu menu(800, 800);
@@ -128,6 +159,39 @@ int main()
                     {
                         Pacman pacman;
                         pacman.SetRenderWindow(&play);
+
+                         Ghost ghosts[NUM_GHOSTS]; 
+                        ghosts[0].texture.loadFromFile("img/ghost1.png");
+                        ghosts[1].texture.loadFromFile("img/ghost2.png");
+                        ghosts[2].texture.loadFromFile("img/ghost3.png");
+                        ghosts[3].texture.loadFromFile("img/ghost4.png");
+
+                        ghosts[0].sprite.setTexture(ghosts[0].texture);
+                        ghosts[1].sprite.setTexture(ghosts[1].texture);
+                        ghosts[2].sprite.setTexture(ghosts[2].texture);
+                        ghosts[3].sprite.setTexture(ghosts[3].texture);
+
+                        ghosts[0].sprite.setScale(0.1,0.1);
+                        ghosts[1].sprite.setScale(0.09,0.09);
+                        ghosts[2].sprite.setScale(0.1,0.1);
+                        ghosts[3].sprite.setScale(0.09,0.09);
+
+                        ghosts[0].position.x=370; ghosts[0].position.y=370;
+                        ghosts[1].position.x=420; ghosts[1].position.y=420;
+                        ghosts[2].position.x=470; ghosts[2].position.y=370;
+                        ghosts[3].position.x=300; ghosts[3].position.y=420;
+
+                        ghosts[0].SetRenderWindow(&play);
+                        ghosts[1].SetRenderWindow(&play);
+                        ghosts[2].SetRenderWindow(&play);
+                        ghosts[3].SetRenderWindow(&play);
+
+                        pthread_t threads[NUM_GHOSTS];
+                         for (int i = 0; i < NUM_GHOSTS; ++i) {
+                            //ghosts[i].position.x= 250+10*(i+1);
+                           pthread_create(&threads[i], nullptr, moveGhost, &ghosts[i]);
+                        }
+
                         pthread_t t1;
                         pthread_create(&t1, NULL, movePacman, &pacman);//pacman creataed
 
@@ -188,7 +252,12 @@ int main()
                             score.close();
                             level.close();
                             play.clear();
+                            drawmaze(play);
                             pacman.Display();
+                            ghosts[0].Display();
+                            ghosts[1].Display();
+                            ghosts[2].Display();
+                            ghosts[3].Display();
                             //play.draw(menubg);
                             play.display();
                         }

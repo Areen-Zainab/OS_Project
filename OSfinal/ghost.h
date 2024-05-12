@@ -31,8 +31,9 @@ public:
         //position.y=295;
     }
     void SetPosition(gPosition position){this->position = position; }
-    void MoveRandomly(float delta_x) {
-        //position.x += delta_x;
+    void Move(float x, float y) {
+        //position.x +=x;
+       // position.y +=y;
     }
 
     void Display() {

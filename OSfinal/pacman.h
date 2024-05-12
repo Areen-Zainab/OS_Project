@@ -7,6 +7,7 @@
 #include <fstream>
 #include <SFML/Graphics.hpp>
 #include <time.h>
+#include <semaphore.h>
 using namespace sf;
 using namespace std;
 
@@ -23,7 +24,7 @@ public:
     Position position;
     Texture texture;
     RenderWindow* renderWindow;
-
+    sem_t* ghostMoveSemaphore;
     Pacman(){
         texture.loadFromFile("img/pacman.png");
         sprite = Sprite(texture);
@@ -42,8 +43,10 @@ public:
     void MoveDown(float delta_y){ position.y += delta_y;}
     void Move(float x, float y)
     {
+       // sem_wait(&ghostMoveSemaphore); // Acquire semaphore before updating board
         position.x +=x;
         position.y +=y;
+      //  sem_post(&ghostMoveSemaphore); // Release semaphore after updates
     }
     void wrapAround()
     {

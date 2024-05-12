@@ -1,4 +1,8 @@
 #include <SFML/Graphics.hpp>
+#include <sstream>
+#include <iostream>
+#include <fstream>
+#include <time.h>
 #include "mainMenu.h"
 #include "pacman.h"
 #include "ghost.h"
@@ -6,16 +10,18 @@
 #include <pthread.h>
 using namespace sf;
 using namespace std;
+#include "score.cpp"
 
 bool leftKeyPressed = false; 
 bool rightKeyPressed = false; 
 bool upKeyPressed = false; 
 bool downKeyPressed = false; 
+int topScore=0, scoreCount=0, lives=0;
 
 void* moveGhost(void* arg) {
     Ghost* ghost = static_cast<Ghost*>(arg);
     while (true) {
-        ghost->MoveRandomly(5.0f); // Move ghost randomly
+        ghost->Move(5.0f,5.0f); // Move ghost randomly
 
         // Sleep for a short time to avoid busy waiting
         sleep(milliseconds(100));
@@ -27,6 +33,7 @@ const int NUM_GHOSTS = 4;
 const int WIDTH = 22;
 const int HEIGHT = 20;
 const int gsize = 35;
+sem_t ghostMoveSemaphore;
 
 int maze[HEIGHT][WIDTH] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -36,9 +43,9 @@ int maze[HEIGHT][WIDTH] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
                             {1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1},//6
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1},
-                            {1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1},
+                            {1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1},
                             {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},//10
-                            {1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1},
+                            {1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1},
                             {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1},
                             {1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -49,30 +56,39 @@ int maze[HEIGHT][WIDTH] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 };
-
 //maze bnane wala function
 void drawmaze(RenderWindow &ok){
+    
    for (int i = 0; i < HEIGHT; i++) 
    {
       for (int j = 0; j < WIDTH; j++) 
       {
           if(maze[i][j]==0)
-          {
-             CircleShape golu(5,5);
-             golu.setPosition(j*gsize+40, i*gsize+60);
-             golu.setFillColor(Color::Yellow);
-              ok.draw(golu);
+          { 
+            CircleShape golu(5,5);
+            golu.setPosition(j*gsize+40, i*gsize+60);
+            golu.setFillColor(Color::Yellow);
+            ok.draw(golu);
           }
           else if(maze[i][j]==1)
           {
-             RectangleShape dabba(Vector2f(30,30));
+            RectangleShape dabba(Vector2f(30,30));
             dabba.setPosition(j*gsize+30, i*gsize+50);
             dabba.setFillColor(Color::Blue);
             ok.draw(dabba);
           }
-        }
-                         
+        }                        
    }
+}
+
+bool CheckPelletCollision(const Pacman& pacman) { //we have 256 pellets
+    int pacmanX = static_cast<int>(pacman.position.x) / gsize;
+    int pacmanY = static_cast<int>(pacman.position.y) / gsize-1;
+    if (maze[pacmanY][pacmanX] == 0) {
+        maze[pacmanY][pacmanX] = -1;
+        return true;
+    }
+    return false;
 }
 
 //wall ki collision check krne wala beautiful function
@@ -82,9 +98,8 @@ bool CheckWallCollision(const Pacman& pacman, float x, float y) {
   float newX = pacmanBox.left + x;
   float newY = pacmanBox.top + y;
 
-  for (int i = 0; i < HEIGHT; i++) {
+    for (int i = 0; i < HEIGHT; i++) {
     for (int j = 0; j < WIDTH; j++) {
-
       if (maze[i][j] == 1) 
       { // shit yaar wall agai hai
         RectangleShape currentWall(Vector2f(30, 30));
@@ -96,40 +111,57 @@ bool CheckWallCollision(const Pacman& pacman, float x, float y) {
       }
     }
   }
+  return false; // yayy no collision
+}
+
+bool gCheckWallCollision(const Ghost& ghost, float x, float y) {
+  FloatRect ghostBox = ghost.sprite.getGlobalBounds();
+
+  float newX = ghostBox.left + x;
+  float newY = ghostBox.top + y;
+
+  for (int i = 0; i < HEIGHT; i++) {
+    for (int j = 0; j < WIDTH; j++) {
+
+      if (maze[i][j] == 1) 
+      { // shit yaar wall agai hai
+        RectangleShape currentWall(Vector2f(30, 30));
+        currentWall.setPosition(j * gsize + 30, i * gsize + 50);
+        FloatRect wallBox = currentWall.getGlobalBounds();
+        if (FloatRect(newX, newY, ghostBox.width, ghostBox.height).intersects(wallBox)) {
+          return true; // Collision ho rahi ha bhaiii
+        }
+      }
+    }
+  }
 
   return false; // yayy no collision
 }
 
 void* movePacman(void* arg) {
     Pacman* pacman = static_cast<Pacman*>(arg);
-
     while (true) {
         float dx = 0.0f;
         float dy = 0.0f;
          if (leftKeyPressed) {
-            //pacman->MoveLeft(5.0f); // Move Pac-Man left
             dx = -5.0f;
-            //pacman->wrapAround();
         }
         else if (rightKeyPressed) {
-           // pacman->MoveRight(5.0f); // Move Pac-Man right
-           // pacman->wrapAround();
            dx = 5.0f;
         }
          else if (upKeyPressed) {
-            //pacman->MoveUp(5.0f); // Move Pac-Man up
-            //pacman->wrapAround();
             dy = -5.0f;
         }
          else if (downKeyPressed) {
-           // pacman->MoveDown(5.0f); // Move Pac-Man down
-           // pacman->wrapAround();
-           dy = 5.0f;
+             dy = 5.0f;
         }
          if (!CheckWallCollision(*pacman, dx, dy)) {
             // If not, move Pacman
             pacman->Move(dx, dy);
             pacman->wrapAround();
+            if (CheckPelletCollision(*pacman)) {
+                scoreCount++;
+            }
 
         }else if(CheckWallCollision(*pacman, dx, dy))
         {
@@ -155,19 +187,44 @@ void* movePacman(void* arg) {
             pacman->wrapAround();
         }
          else if (downKeyPressed) {
-            downKeyPressed = false;
-            upKeyPressed = true;
+           downKeyPressed = false;
+           upKeyPressed = true;
            dy = -5.0f;
            pacman->Move(dx, dy);
            pacman->wrapAround();
         }
-
         }
 	    sleep(milliseconds(50));
     }
-
     return NULL;
 }
+/**
+void* moveGhost(void* arg) {
+  Ghost* ghost = static_cast<Ghost*>(arg);
+  //Pacman* pacman = // Get Pacman object ;
+
+  while (true) {
+    sem_wait(&ghostMoveSemaphore); // Acquire semaphore before accessing board
+
+    float x = pacman->position.x - ghost->position.x;
+    float y = pacman->position.y - ghost->position.y;
+
+    // Determine the direction to move closer to Pacman (avoiding large jumps)
+    x = (abs(x) > gsize) ? (x > 0 ? -gsize : gsize) : x;
+    y = (abs(y) > gsize) ? (y > 0 ? -gsize : gsize) : y;
+
+    // Check for collision with walls (considering gameBoard)
+    if (!gCheckWallCollision(*ghost, x, y)) {
+             ghost->Move(x,y);  
+    }
+
+    sem_post(&ghostMoveSemaphore); // Release semaphore after calculations/movement
+
+    sleep(milliseconds(100)); // Adjust delay as needed
+  }
+
+  return NULL;
+}*/
 
 int main()
 {
@@ -200,6 +257,20 @@ int main()
     Texture lbg;
     lbg.loadFromFile("img/level.png");
     levelbg.setTexture(&lbg);
+    Font font;
+    if (!font.loadFromFile("fonts/arial.ttf"))
+    {
+        cout << "error loading font" << endl;
+    }
+
+    Text scoress,topScoreText, scoreText,liveText, livee;
+    scoress.setFont(font);
+    topScoreText.setFont(font);
+    scoreText.setFont(font);
+    scoreText.setString("Your score: ");
+    liveText.setFont(font);
+    liveText.setString("Your lives: ");
+    livee.setFont(font);
 
     while (mainmenu.isOpen())
     {
@@ -233,7 +304,7 @@ int main()
                     {
                         Pacman pacman;
                         pacman.SetRenderWindow(&play);
-
+                        sem_init(&ghostMoveSemaphore, 0, 1);
                          Ghost ghosts[NUM_GHOSTS]; 
                         ghosts[0].texture.loadFromFile("img/ghost1.png");
                         ghosts[1].texture.loadFromFile("img/ghost2.png");
@@ -321,7 +392,7 @@ int main()
                                     }
 				               }
                             }
-
+                            
                             help.close();
                             score.close();
                             level.close();
@@ -333,6 +404,24 @@ int main()
                             ghosts[2].Display();
                             ghosts[3].Display();
                             //play.draw(menubg);
+                            scoress.setString(int2Str(scoreCount));
+                            scoress.setCharacterSize(20);
+                            scoress.setFillColor(Color::Yellow);
+                            scoress.setPosition(160, 20);
+                            play.draw(scoress);
+                            scoreText.setCharacterSize(20);
+                            scoreText.setFillColor(Color::White);
+                            scoreText.setPosition(50,20);
+                            play.draw(scoreText);
+                            liveText.setCharacterSize(20);
+                            liveText.setPosition(600, 20);
+                            liveText.setFillColor(Color::White);
+                            play.draw(liveText);
+                            livee.setString(int2Str(lives));
+                            livee.setCharacterSize(20);
+                            livee.setFillColor(Color::Red);
+                            livee.setPosition(700,20);
+                            play.draw(livee);
                             play.display();
                         }
                     }
@@ -361,7 +450,7 @@ int main()
 
                         }
                     }
-                    if (x == 2)  //high scores
+                    if (x == 2)    //high scores
                     {
                         while (score.isOpen())
                         {
@@ -378,12 +467,19 @@ int main()
                                     }
                                 }
                             }
+                           
                             play.close();
                             level.close();
                             help.close();
                             score.clear();
                             score.draw(scorebg);
-                            score.display();
+                            topScoreText.setString(int2Str(topScore));
+                            topScoreText.setCharacterSize(70);
+                            topScoreText.setFillColor(Color::Red);
+                            topScoreText.setPosition(400,400);
+                            score.draw(topScoreText);
+                            
+                            score.display();                            
                         }
                     }
                     if (x == 3)    //levels

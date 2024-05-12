@@ -8,6 +8,8 @@
 #include "ghost.h"
 #include <semaphore.h>
 #include <pthread.h>
+#include <vector>
+#include <mutex>
 using namespace sf;
 using namespace std;
 #include "score.cpp"
@@ -16,13 +18,12 @@ bool leftKeyPressed = false;
 bool rightKeyPressed = false; 
 bool upKeyPressed = false; 
 bool downKeyPressed = false; 
-int topScore=0, scoreCount=0, lives=0;
+int topScore=0, scoreCount=0, lives=3;
 
 void* moveGhost(void* arg) {
     Ghost* ghost = static_cast<Ghost*>(arg);
     while (true) {
         ghost->Move(5.0f,5.0f); // Move ghost randomly
-
         // Sleep for a short time to avoid busy waiting
         sleep(milliseconds(100));
     }
@@ -162,7 +163,6 @@ void* movePacman(void* arg) {
             if (CheckPelletCollision(*pacman)) {
                 scoreCount++;
             }
-
         }else if(CheckWallCollision(*pacman, dx, dy))
         {
             if (leftKeyPressed) {
@@ -198,6 +198,16 @@ void* movePacman(void* arg) {
     }
     return NULL;
 }
+
+bool CheckGhostCollision(const Pacman& pacman, const Ghost& ghost) {
+    FloatRect pacmanBox = pacman.sprite.getGlobalBounds();
+    FloatRect ghostBox = ghost.sprite.getGlobalBounds();
+    if (pacmanBox.intersects(ghostBox)) {
+        return true; // Collision occurred
+    }
+    return false; // No collision wow yayyy
+}
+
 /**
 void* moveGhost(void* arg) {
   Ghost* ghost = static_cast<Ghost*>(arg);
@@ -305,7 +315,7 @@ int main()
                         Pacman pacman;
                         pacman.SetRenderWindow(&play);
                         sem_init(&ghostMoveSemaphore, 0, 1);
-                         Ghost ghosts[NUM_GHOSTS]; 
+                        Ghost ghosts[NUM_GHOSTS]; 
                         ghosts[0].texture.loadFromFile("img/ghost1.png");
                         ghosts[1].texture.loadFromFile("img/ghost2.png");
                         ghosts[2].texture.loadFromFile("img/ghost3.png");
@@ -403,6 +413,14 @@ int main()
                             ghosts[1].Display();
                             ghosts[2].Display();
                             ghosts[3].Display();
+                            // Check for collisions with each ghost
+                            for (const auto& ghost : ghosts) {
+                                if (CheckGhostCollision(pacman, ghost)) {
+                                    lives--;
+                                    pacman.position.x =90;
+                                    pacman.position.y= 100;
+                                }
+                            }
                             //play.draw(menubg);
                             scoress.setString(int2Str(scoreCount));
                             scoress.setCharacterSize(20);

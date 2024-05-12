@@ -27,8 +27,8 @@ public:
     Pacman(){
         texture.loadFromFile("img/pacman.png");
         sprite = Sprite(texture);
-        sprite.setScale(0.1, 0.1);
-        position.x = 100;
+        sprite.setScale(0.15, 0.15);
+        position.x = 90;
         position.y = 100;
     }
     void SetPosition(Position position){this->position = position; }
@@ -40,7 +40,11 @@ public:
     void MoveUp(float delta_y){ position.y -= delta_y; }
 
     void MoveDown(float delta_y){ position.y += delta_y;}
-    
+    void Move(float x, float y)
+    {
+        position.x +=x;
+        position.y +=y;
+    }
     void wrapAround()
     {
         if (position.y < 0){ position.y = 800;}

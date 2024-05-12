@@ -2,38 +2,15 @@
 #include "mainMenu.h"
 #include "pacman.h"
 #include "ghost.h"
+#include <semaphore.h>
+#include <pthread.h>
+using namespace sf;
+using namespace std;
 
 bool leftKeyPressed = false; 
 bool rightKeyPressed = false; 
 bool upKeyPressed = false; 
 bool downKeyPressed = false; 
-
-void* movePacman(void* arg) {
-    Pacman* pacman = static_cast<Pacman*>(arg);
-
-    while (true) {
-         if (leftKeyPressed) {
-            pacman->MoveLeft(5.0f); // Move Pac-Man left
-            pacman->wrapAround();
-        }
-        else if (rightKeyPressed) {
-            pacman->MoveRight(5.0f); // Move Pac-Man right
-            pacman->wrapAround();
-        }
-         else if (upKeyPressed) {
-            pacman->MoveUp(5.0f); // Move Pac-Man up
-            pacman->wrapAround();
-        }
-         else if (downKeyPressed) {
-            pacman->MoveDown(5.0f); // Move Pac-Man down
-            pacman->wrapAround();
-        }
-
-	    sleep(milliseconds(50));
-    }
-
-    return NULL;
-}
 
 void* moveGhost(void* arg) {
     Ghost* ghost = static_cast<Ghost*>(arg);
@@ -43,26 +20,27 @@ void* moveGhost(void* arg) {
         // Sleep for a short time to avoid busy waiting
         sleep(milliseconds(100));
     }
-
     return NULL;
 }
+
 const int NUM_GHOSTS = 4;
 const int WIDTH = 22;
 const int HEIGHT = 20;
 const int gsize = 35;
+
 int maze[HEIGHT][WIDTH] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1},
                             {1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1},//6
-                            {1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-                            {1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1},
-                            {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},//10
-                            {1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1},
-                            {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1},
-                            {1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1},
+                            {1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},//10
+                            {1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1},
+                            {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1},
+                            {1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
                             {1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1},
                             {1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -72,6 +50,7 @@ int maze[HEIGHT][WIDTH] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
                             {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 };
 
+//maze bnane wala function
 void drawmaze(RenderWindow &ok){
    for (int i = 0; i < HEIGHT; i++) 
    {
@@ -79,22 +58,117 @@ void drawmaze(RenderWindow &ok){
       {
           if(maze[i][j]==0)
           {
-             CircleShape golu(4,4);
+             CircleShape golu(5,5);
              golu.setPosition(j*gsize+40, i*gsize+60);
-             golu.setFillColor(Color(225,217,0));
+             golu.setFillColor(Color::Yellow);
               ok.draw(golu);
           }
           else if(maze[i][j]==1)
           {
              RectangleShape dabba(Vector2f(30,30));
-               dabba.setPosition(j*gsize+30, i*gsize+50);
-                dabba.setFillColor(Color(0,0,120));
-               ok.draw(dabba);
+            dabba.setPosition(j*gsize+30, i*gsize+50);
+            dabba.setFillColor(Color::Blue);
+            ok.draw(dabba);
           }
         }
                          
    }
 }
+
+//wall ki collision check krne wala beautiful function
+bool CheckWallCollision(const Pacman& pacman, float x, float y) {
+  FloatRect pacmanBox = pacman.sprite.getGlobalBounds();
+
+  float newX = pacmanBox.left + x;
+  float newY = pacmanBox.top + y;
+
+  for (int i = 0; i < HEIGHT; i++) {
+    for (int j = 0; j < WIDTH; j++) {
+
+      if (maze[i][j] == 1) 
+      { // shit yaar wall agai hai
+        RectangleShape currentWall(Vector2f(30, 30));
+        currentWall.setPosition(j * gsize + 30, i * gsize + 50);
+        FloatRect wallBox = currentWall.getGlobalBounds();
+        if (FloatRect(newX, newY, pacmanBox.width, pacmanBox.height).intersects(wallBox)) {
+          return true; // Collision ho rahi ha bhaiii
+        }
+      }
+    }
+  }
+
+  return false; // yayy no collision
+}
+
+void* movePacman(void* arg) {
+    Pacman* pacman = static_cast<Pacman*>(arg);
+
+    while (true) {
+        float dx = 0.0f;
+        float dy = 0.0f;
+         if (leftKeyPressed) {
+            //pacman->MoveLeft(5.0f); // Move Pac-Man left
+            dx = -5.0f;
+            //pacman->wrapAround();
+        }
+        else if (rightKeyPressed) {
+           // pacman->MoveRight(5.0f); // Move Pac-Man right
+           // pacman->wrapAround();
+           dx = 5.0f;
+        }
+         else if (upKeyPressed) {
+            //pacman->MoveUp(5.0f); // Move Pac-Man up
+            //pacman->wrapAround();
+            dy = -5.0f;
+        }
+         else if (downKeyPressed) {
+           // pacman->MoveDown(5.0f); // Move Pac-Man down
+           // pacman->wrapAround();
+           dy = 5.0f;
+        }
+         if (!CheckWallCollision(*pacman, dx, dy)) {
+            // If not, move Pacman
+            pacman->Move(dx, dy);
+            pacman->wrapAround();
+
+        }else if(CheckWallCollision(*pacman, dx, dy))
+        {
+            if (leftKeyPressed) {
+            rightKeyPressed=true;
+            leftKeyPressed = false;
+            dx = 5.0f;
+            pacman->Move(dx, dy);
+            pacman->wrapAround();
+        }
+        else if (rightKeyPressed) {
+           leftKeyPressed = true;
+           rightKeyPressed= false;
+           dx = -5.0f;
+           pacman->Move(dx, dy);
+           pacman->wrapAround();
+        }
+         else if (upKeyPressed) {
+            upKeyPressed = false;
+            downKeyPressed = true;
+            dy = 5.0f;
+            pacman->Move(dx, dy);
+            pacman->wrapAround();
+        }
+         else if (downKeyPressed) {
+            downKeyPressed = false;
+            upKeyPressed = true;
+           dy = -5.0f;
+           pacman->Move(dx, dy);
+           pacman->wrapAround();
+        }
+
+        }
+	    sleep(milliseconds(50));
+    }
+
+    return NULL;
+}
+
 int main()
 {
     //for main menu front page
@@ -171,10 +245,10 @@ int main()
                         ghosts[2].sprite.setTexture(ghosts[2].texture);
                         ghosts[3].sprite.setTexture(ghosts[3].texture);
 
-                        ghosts[0].sprite.setScale(0.1,0.1);
-                        ghosts[1].sprite.setScale(0.09,0.09);
-                        ghosts[2].sprite.setScale(0.1,0.1);
-                        ghosts[3].sprite.setScale(0.09,0.09);
+                        ghosts[0].sprite.setScale(0.07,0.07);
+                        ghosts[1].sprite.setScale(0.07,0.07);
+                        ghosts[2].sprite.setScale(0.07,0.07);
+                        ghosts[3].sprite.setScale(0.07,0.07);
 
                         ghosts[0].position.x=370; ghosts[0].position.y=370;
                         ghosts[1].position.x=420; ghosts[1].position.y=420;

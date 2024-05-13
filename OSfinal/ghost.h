@@ -32,8 +32,8 @@ public:
     }
     void SetPosition(gPosition position){this->position = position; }
     void Move(float x, float y) {
-        //position.x +=x;
-       // position.y +=y;
+        position.x +=(x*2);
+        position.y +=(y*2);
     }
 
     void Display() {

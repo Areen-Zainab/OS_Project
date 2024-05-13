@@ -14,21 +14,12 @@ using namespace sf;
 using namespace std;
 #include "score.cpp"
 
+Pacman pacman;
 bool leftKeyPressed = false; 
 bool rightKeyPressed = false; 
 bool upKeyPressed = false; 
 bool downKeyPressed = false; 
 int topScore=0, scoreCount=0, lives=3;
-
-void* moveGhost(void* arg) {
-    Ghost* ghost = static_cast<Ghost*>(arg);
-    while (true) {
-        ghost->Move(5.0f,5.0f); // Move ghost randomly
-        // Sleep for a short time to avoid busy waiting
-        sleep(milliseconds(100));
-    }
-    return NULL;
-}
 
 const int NUM_GHOSTS = 4;
 const int WIDTH = 22;
@@ -208,6 +199,72 @@ bool CheckGhostCollision(const Pacman& pacman, const Ghost& ghost) {
     return false; // No collision wow yayyy
 }
 
+bool CheckWallCollision(const Ghost& ghost, float x, float y) {
+    FloatRect ghostBox = ghost.sprite.getGlobalBounds();
+
+    float newX = ghostBox.left + x;
+    float newY = ghostBox.top + y;
+
+    for (int i = 0; i < HEIGHT; i++) {
+        for (int j = 0; j < WIDTH; j++) {
+            if (maze[i][j] == 1) {
+                RectangleShape currentWall(sf::Vector2f(30, 30));
+                currentWall.setPosition(j * gsize + 30, i * gsize + 50);
+                FloatRect wallBox = currentWall.getGlobalBounds();
+                if (FloatRect(newX, newY, ghostBox.width, ghostBox.height).intersects(wallBox)) {
+                    return true; // Collision detected
+                }
+            }
+        }
+    }
+
+    return false; // No collision detected
+}
+#include <cmath>
+
+// Function to calculate Euclidean distance between two points
+float distance(float x1, float y1, float x2, float y2) {
+    return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+}
+
+pair<float, float> findClosestDirection(const Ghost& ghost, const Pacman& pacman) {
+    float ghostX = ghost.position.x;
+    float ghostY = ghost.position.y;
+    float pacmanX = pacman.position.x;
+    float pacmanY = pacman.position.y;
+
+    // Calculate distances in each direction
+    float distanceUp = distance(ghostX, ghostY - 1, pacmanX, pacmanY);
+    float distanceDown = distance(ghostX, ghostY + 1, pacmanX, pacmanY);
+    float distanceLeft = distance(ghostX - 1, ghostY, pacmanX, pacmanY);
+    float distanceRight = distance(ghostX + 1, ghostY, pacmanX, pacmanY);
+
+    // Find the minimum distance and return the corresponding direction
+    if (distanceUp <= distanceDown && distanceUp <= distanceLeft && distanceUp <= distanceRight) {
+        return make_pair(0, -1); // Move up
+    } else if (distanceDown <= distanceLeft && distanceDown <= distanceRight) {
+        return make_pair(0, 1); // Move down
+    } else if (distanceLeft <= distanceRight) {
+        return make_pair(-1, 0); // Move left
+    } else {
+        return make_pair(1, 0); // Move right
+    }
+}
+
+void* moveGhost(void* arg) {
+    Ghost* ghost = static_cast<Ghost*>(arg);
+    while (true) {
+        pair<float, float> direction = findClosestDirection(*ghost, pacman);
+        float dx = direction.first;
+        float dy = direction.second;
+        if (!CheckWallCollision(*ghost, dx, dy))
+        ghost->Move(dx,dy); // Move ghost randomly
+        // Sleep for a short time to avoid busy waiting
+        sleep(milliseconds(100));
+    }
+    return NULL;
+}
+
 /**
 void* moveGhost(void* arg) {
   Ghost* ghost = static_cast<Ghost*>(arg);
@@ -312,7 +369,7 @@ int main()
                     int x = menu.menuPressed();
                     if (x == 0) //play game
                     {
-                        Pacman pacman;
+                        
                         pacman.SetRenderWindow(&play);
                         sem_init(&ghostMoveSemaphore, 0, 1);
                         Ghost ghosts[NUM_GHOSTS]; 

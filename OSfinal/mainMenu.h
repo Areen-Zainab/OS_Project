@@ -8,7 +8,7 @@
 using namespace sf;
 using namespace std;
 
-#define max 5
+#define max1 5
 class Menu
 {
 public:
@@ -54,7 +54,7 @@ public:
 	}
 	void draw(RenderWindow& window)
 	{
-		for(int i = 0; i < max; i++) {
+		for(int i = 0; i < max1; i++) {
 			window.draw(main[i]);
 		}
 	}
@@ -70,7 +70,7 @@ public:
 		}
 	}
 	void MoveDown() {
-		if (mainSelect + 1 <= max) {
+		if (mainSelect + 1 <= max1) {
 			main[mainSelect].setFillColor(Color::White);
 			mainSelect+=1;
 			if (mainSelect == 5) {
@@ -91,5 +91,5 @@ public:
 private:
 	int mainSelect=0;
 	Font font;
-	Text main[max];
+	Text main[max1];
 };
